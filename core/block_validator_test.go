@@ -32,6 +32,7 @@ import (
 // Tests that simple header verification works, for both good and bad blocks.
 func TestHeaderVerification(t *testing.T) {
 	// Create a simple chain to verify
+	shyfttest.PgTestDbSetup()
 	var (
 		testdb, _ = ethdb.NewMemDatabase()
 		gspec     = &Genesis{Config: params.TestChainConfig}
@@ -73,7 +74,6 @@ func TestHeaderVerification(t *testing.T) {
 			case <-time.After(25 * time.Millisecond):
 			}
 		}
-		shyfttest.TruncateTables()
 		chain.InsertChain(blocks[i : i+1])
 	}
 }

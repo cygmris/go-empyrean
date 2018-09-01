@@ -53,18 +53,16 @@ func expectResponse(r p2p.MsgReader, msgcode, reqID, bv uint64, data interface{}
 
 // Tests that block headers can be retrieved from a remote chain based on user queries.
 func TestGetBlockHeadersLes1(t *testing.T) {
-	shyfttest.PgTestDbSetup()
 	testGetBlockHeaders(t, 1)
 }
 func TestGetBlockHeadersLes2(t *testing.T) {
-	shyfttest.PgTestDbSetup()
 	testGetBlockHeaders(t, 2)
 }
 
 func testGetBlockHeaders(t *testing.T, protocol int) {
-	db, _ := ethdb.NewMemDatabase()
 	// @SHYFT NOTE: clear pg db
-	shyfttest.TruncateTables()
+	shyfttest.PgTestDbSetup()
+	db, _ := ethdb.NewMemDatabase()
 	pm := newTestProtocolManagerMust(t, false, downloader.MaxHashFetch+15, nil, nil, nil, db)
 	bc := pm.blockchain.(*core.BlockChain)
 	peer, _ := newTestPeer(t, "peer", protocol, pm, true)
@@ -191,17 +189,15 @@ func testGetBlockHeaders(t *testing.T, protocol int) {
 
 // Tests that block contents can be retrieved from a remote chain based on their hashes.
 func TestGetBlockBodiesLes1(t *testing.T) {
-	shyfttest.PgTestDbSetup()
 	testGetBlockBodies(t, 1)
 }
-func TestGetBlockBodiesLes2(t *testing.T) {
-	shyfttest.PgTestDbSetup()
+func TestGetBlockBodiesLes2(t *testing.T) {}
 	testGetBlockBodies(t, 2)
 }
 
 func testGetBlockBodies(t *testing.T, protocol int) {
+	shyfttest.PgTestDbSetup()
 	db, _ := ethdb.NewMemDatabase()
-	shyfttest.TruncateTables()
 	pm := newTestProtocolManagerMust(t, false, downloader.MaxBlockFetch+15, nil, nil, nil, db)
 	bc := pm.blockchain.(*core.BlockChain)
 	peer, _ := newTestPeer(t, "peer", protocol, pm, true)

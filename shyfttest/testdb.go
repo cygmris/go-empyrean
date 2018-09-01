@@ -40,6 +40,7 @@ func PgTestTearDown() {
 	Cleaner.Clean("blocks")
 	Cleaner.Clean("txs")
 	Cleaner.Clean("internaltxs")
+	Cleaner.Close()
 }
 
 // PgRecreateTables - recreates pg database tables

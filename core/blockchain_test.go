@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math/big"
 	"math/rand"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -36,23 +35,11 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 )
 
-// @SHYFT NOTE: Added to clear and reset pg db before test
-// Setup DB for Testing Before Each Test
-// const connStrTest = "user=postgres dbname=shyftdbtest password=docker sslmode=disable"
-
-func TestMain(m *testing.M) {
-	shyfttest.PgTestDbSetup()
-	retCode := m.Run()
-	shyfttest.PgTestTearDown()
-	os.Exit(retCode)
-}
-
 // Test fork of length N starting from block i
 func testFork(t *testing.T, blockchain *BlockChain, i, n int, full bool, comparator func(td1, td2 *big.Int)) {
-	//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-	// shyfttest.TruncateTables()
-	// Copy old chain up to #i into a new db
+	// @SHYFT NOTE: Pg Test Setup
 	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	db, blockchain2, err := newCanonical(ethash.NewFaker(), i, full)
 	if err != nil {
 		t.Fatal("could not make new canonical in testFork", err)
@@ -155,8 +142,6 @@ func testBlockChainImport(chain types.Blocks, blockchain *BlockChain) error {
 // testHeaderChainImport tries to process a chain of header, writing them into
 // the database if successful.
 func testHeaderChainImport(chain []*types.Header, blockchain *BlockChain) error {
-	//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-	// shyfttest.TruncateTables()
 	for _, header := range chain {
 		// Try and validate the header
 		if err := blockchain.engine.VerifyHeader(blockchain, header, false); err != nil {
@@ -181,14 +166,14 @@ func insertChain(done chan bool, blockchain *BlockChain, chain types.Blocks, t *
 }
 
 func TestLastBlock(t *testing.T) {
-	//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
+	// @SHYFT NOTE: Pg Test Setup
 	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	_, blockchain, err := newCanonical(ethash.NewFaker(), 0, true)
 	if err != nil {
 		t.Fatalf("failed to create pristine chain: %v", err)
 	}
 	defer blockchain.Stop()
-	shyfttest.TruncateTables()
 
 	blocks := makeBlockChain(blockchain.CurrentBlock(), 1, ethash.NewFullFaker(), blockchain.db, 0)
 	if _, err := blockchain.InsertChain(blocks); err != nil {
@@ -298,8 +283,10 @@ func TestEqualForkHeaders(t *testing.T) { testEqualFork(t, false) }
 func TestEqualForkBlocks(t *testing.T)  { testEqualFork(t, true) }
 
 func testEqualFork(t *testing.T, full bool) {
+	// @SHYFT NOTE: Pg Test Setup
+	// shyfttest.PgTestDbSetup()
+	// defer shyfttest.PgTestTearDown()
 	length := 10
-
 	// Make first chain starting from genesis
 	_, processor, err := newCanonical(ethash.NewFaker(), length, full)
 	if err != nil {
@@ -328,7 +315,9 @@ func TestBrokenBlockChain(t *testing.T)  { testBrokenChain(t, true) }
 
 func testBrokenChain(t *testing.T, full bool) {
 	// Make chain starting from genesis
+	// @SHYFT NOTE: Set Up DB and Teardown
 	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	db, blockchain, err := newCanonical(ethash.NewFaker(), 10, full)
 	if err != nil {
 		t.Fatalf("failed to make new canonical chain: %v", err)
@@ -381,7 +370,9 @@ func testReorgShort(t *testing.T, full bool) {
 func testReorg(t *testing.T, first, second []int64, td int64, full bool) {
 	// Create a pristine chain and database
 	//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-	shyfttest.TruncateTables()
+	// @SHYFT NOTE: Set Up DB and Teardown
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	db, blockchain, err := newCanonical(ethash.NewFaker(), 0, full)
 	if err != nil {
 		t.Fatalf("failed to create pristine chain: %v", err)
@@ -486,9 +477,9 @@ func TestReorgBadHeaderHashes(t *testing.T) { testReorgBadHashes(t, false) }
 func TestReorgBadBlockHashes(t *testing.T)  { testReorgBadHashes(t, true) }
 
 func testReorgBadHashes(t *testing.T, full bool) {
-	//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-	shyfttest.TruncateTables()
-	// Create a pristine chain and database
+	// @SHYFT NOTE: Set Up DB and Teardown
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown() // Create a pristine chain and database
 	db, blockchain, err := newCanonical(ethash.NewFaker(), 0, full)
 	if err != nil {
 		t.Fatalf("failed to create pristine chain: %v", err)
@@ -543,10 +534,11 @@ func TestHeadersInsertNonceError(t *testing.T) { testInsertNonceError(t, false) 
 func TestBlocksInsertNonceError(t *testing.T)  { testInsertNonceError(t, true) }
 
 func testInsertNonceError(t *testing.T, full bool) {
+	// @SHYFT NOTE: Set Up DB and Teardown
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	for i := 1; i < 25 && !t.Failed(); i++ {
 		// Create a pristine chain and database
-		//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-		shyfttest.TruncateTables()
 		db, blockchain, err := newCanonical(ethash.NewFaker(), 0, full)
 
 		if err != nil {
@@ -613,8 +605,9 @@ func TestFastVsFullChains(t *testing.T) {
 		genesis = gspec.MustCommit(gendb)
 		signer  = types.NewEIP155Signer(gspec.Config.ChainId)
 	)
-	//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-	shyfttest.TruncateTables()
+	// @SHYFT NOTE: Set Up DB and Teardown
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	blocks, receipts := GenerateChain(gspec.Config, genesis, ethash.NewFaker(), gendb, 1024, func(i int, block *BlockGen) {
 		block.SetCoinbase(common.Address{0x00})
 
@@ -690,8 +683,9 @@ func TestFastVsFullChains(t *testing.T) {
 // Tests that various import methods move the chain head pointers to the correct
 // positions.
 func TestLightVsFastVsFullChainHeads(t *testing.T) {
-	//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-	shyfttest.TruncateTables()
+	// @SHYFT NOTE: Set Up DB and Teardown
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	// Configure and generate a sample block chain
 	var (
 		gendb, _ = ethdb.NewMemDatabase()
@@ -853,8 +847,9 @@ func TestChainTxReorgs(t *testing.T) {
 			gen.AddTx(futureAdd) // This transaction will be added after a full reorg
 		}
 	})
-	//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-	shyfttest.TruncateTables()
+	//@Shyft Note: Reset Posgres Data Tables To Allow Reuse of Test Data
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	if _, err := blockchain.InsertChain(chain); err != nil {
 		t.Fatalf("failed to insert forked chain: %v", err)
 	}
@@ -950,8 +945,9 @@ func TestReorgSideEvent(t *testing.T) {
 
 	blockchain, _ := NewBlockChain(db, nil, gspec.Config, ethash.NewFaker(), vm.Config{})
 	defer blockchain.Stop()
-	//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-	shyfttest.TruncateTables()
+	//@Shyft Note: Reset Posgres Data Tables To Allow Reuse of Test Data
+	shyfttest.PgTestDbSetup()
+	shyfttest.PgTestTearDown()
 	chain, _ := GenerateChain(gspec.Config, genesis, ethash.NewFaker(), db, 3, func(i int, gen *BlockGen) {})
 	if _, err := blockchain.InsertChain(chain); err != nil {
 		t.Fatalf("failed to insert chain: %v", err)
@@ -1239,6 +1235,9 @@ func TestEIP161AccountRemoval(t *testing.T) {
 //
 // https://github.com/ShyftNetwork/go-empyrean/pull/15941
 func TestBlockchainHeaderchainReorgConsistency(t *testing.T) {
+	// @SHYFT NOTE: Pg Test Setup
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	// Generate a canonical chain to act as the main dataset
 	engine := ethash.NewFaker()
 
@@ -1286,7 +1285,9 @@ func TestBlockchainHeaderchainReorgConsistency(t *testing.T) {
 func TestTrieForkGC(t *testing.T) {
 	// Generate a canonical chain to act as the main dataset
 	engine := ethash.NewFaker()
-
+	// @SHYFT NOTE: Pg Test Setup
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	db, _ := ethdb.NewMemDatabase()
 	genesis := new(Genesis).MustCommit(db)
 	blocks, _ := GenerateChain(params.TestChainConfig, genesis, engine, db, 2*triesInMemory, func(i int, b *BlockGen) { b.SetCoinbase(common.Address{1}) })
@@ -1310,8 +1311,8 @@ func TestTrieForkGC(t *testing.T) {
 		t.Fatalf("failed to create tester chain: %v", err)
 	}
 	for i := 0; i < len(blocks); i++ {
-		//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-		shyfttest.TruncateTables()
+		// //@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
+		// shyfttest.TruncateTables()
 		if _, err := chain.InsertChain(blocks[i : i+1]); err != nil {
 			t.Fatalf("block %d: failed to insert into chain: %v", i, err)
 		}
@@ -1334,7 +1335,9 @@ func TestTrieForkGC(t *testing.T) {
 func TestLargeReorgTrieGC(t *testing.T) {
 	// Generate the original common chain segment and the two competing forks
 	engine := ethash.NewFaker()
-
+	// @SHYFT NOTE: Pg Test Setup
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	db, _ := ethdb.NewMemDatabase()
 	genesis := new(Genesis).MustCommit(db)
 
@@ -1346,7 +1349,7 @@ func TestLargeReorgTrieGC(t *testing.T) {
 	diskdb, _ := ethdb.NewMemDatabase()
 	new(Genesis).MustCommit(diskdb)
 	//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-	shyfttest.TruncateTables()
+	// shyfttest.TruncateTables()
 	chain, err := NewBlockChain(diskdb, nil, params.TestChainConfig, engine, vm.Config{})
 	if err != nil {
 		t.Fatalf("failed to create tester chain: %v", err)
@@ -1371,8 +1374,8 @@ func TestLargeReorgTrieGC(t *testing.T) {
 			t.Fatalf("competitor %d: low TD chain became processed", i)
 		}
 	}
-	//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-	shyfttest.TruncateTables()
+	// //@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
+	// shyfttest.TruncateTables()
 	// Import the head of the competitor chain, triggering the reorg and ensure we
 	// successfully reprocess all the stashed away blocks.
 	if _, err := chain.InsertChain(competitor[len(competitor)-2:]); err != nil {

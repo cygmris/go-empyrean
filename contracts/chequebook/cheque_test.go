@@ -115,7 +115,7 @@ func TestIssueAndReceive(t *testing.T) {
 	if received.Cmp(big.NewInt(43)) != 0 {
 		t.Errorf("expected: %v, got %v", "43", received)
 	}
-
+	shyfttest.PgTestTearDown()
 }
 
 func TestCheckbookFile(t *testing.T) {

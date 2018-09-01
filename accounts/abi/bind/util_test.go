@@ -120,5 +120,6 @@ func TestWaitDeployed(t *testing.T) {
 		case <-time.After(2 * time.Second):
 			t.Errorf("test %q: timeout", name)
 		}
+		shyfttest.PgTestTearDown()
 	}
 }

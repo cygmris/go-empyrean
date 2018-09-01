@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"math/big"
-	"os"
 	"testing"
 	"time"
 
@@ -46,12 +45,12 @@ const (
 )
 
 //@SHYFT NOTE: Side effects from PG database therefore need to reset before running
-func TestMain(m *testing.M) {
-	shyfttest.PgTestDbSetup()
-	retCode := m.Run()
-	shyfttest.PgTestTearDown()
-	os.Exit(retCode)
-}
+// func TestMain(m *testing.M) {
+// 	shyfttest.PgTestDbSetup()
+// 	retCode := m.Run()
+// 	shyfttest.PgTestTearDown()
+// 	os.Exit(retCode)
+// }
 
 var (
 	testBankKey, _  = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
@@ -247,6 +246,7 @@ func testChainGen(i int, block *core.BlockGen) {
 
 func testChainOdr(t *testing.T, protocol int, fn odrTestFn) {
 	//@SHYFT //SETS UP OUR TEST ENV
+	shyfttest.PgTestDbSetup()
 	eth.NewShyftTestLDB()
 	shyftTracer := new(eth.ShyftTracer)
 	core.SetIShyftTracer(shyftTracer)
