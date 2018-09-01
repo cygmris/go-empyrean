@@ -24,7 +24,6 @@ import (
 
 	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 
-	"github.com/ShyftNetwork/go-empyrean/core"
 	"github.com/ShyftNetwork/go-empyrean/eth/downloader"
 	"github.com/ShyftNetwork/go-empyrean/p2p"
 	"github.com/ShyftNetwork/go-empyrean/p2p/discover"
@@ -53,7 +52,7 @@ func TestFastSyncDisabling(t *testing.T) {
 	}
 	// Sync up the two peers
 	io1, io2 := p2p.MsgPipe()
-	core.TruncateTables()
+	shyfttest.TruncateTables()
 	go pmFull.handle(pmFull.newPeer(63, p2p.NewPeer(discover.NodeID{}, "empty", nil), io2))
 	go pmEmpty.handle(pmEmpty.newPeer(63, p2p.NewPeer(discover.NodeID{}, "full", nil), io1))
 

@@ -45,7 +45,6 @@ func TestMain(m *testing.M) {
 func TestVM(t *testing.T) {
 	t.Parallel()
 	//@SHYFT //SETS UP OUR TEST ENV - Parallel tests creating issues so the below may not work with parallel
-	core.TruncateTables()
 	eth.NewShyftTestLDB()
 	shyftTracer := new(eth.ShyftTracer)
 	core.SetIShyftTracer(shyftTracer)

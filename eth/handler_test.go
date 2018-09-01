@@ -35,6 +35,8 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/event"
 	"github.com/ShyftNetwork/go-empyrean/p2p"
 	"github.com/ShyftNetwork/go-empyrean/params"
+		"github.com/ShyftNetwork/go-empyrean/shyfttest"
+
 )
 
 // Tests that protocol versions and modes of operations are matched up properly.
@@ -337,7 +339,7 @@ func testGetNodeData(t *testing.T, protocol int) {
 		}
 	}
 	// Assemble the test environment
-	core.TruncateTables()
+	shyfttest.TruncateTables()
 	pm, db := newTestProtocolManagerMust(t, downloader.FullSync, 4, generator, nil)
 	peer, _ := newTestPeer("peer", protocol, pm, true)
 	defer peer.close()

@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
+
 	"github.com/ShyftNetwork/go-empyrean/common"
 	"github.com/ShyftNetwork/go-empyrean/consensus/ethash"
 	"github.com/ShyftNetwork/go-empyrean/core"
@@ -37,7 +39,7 @@ import (
 const (
 	testInstance = "console-tester"
 	testAddress  = "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182"
-	)
+)
 
 // hookedPrompter implements UserPrompter to simulate use input via channels.
 type hookedPrompter struct {
@@ -159,6 +161,7 @@ func (env *tester) Close(t *testing.T) {
 // the instance name, coinbase account, block number, data directory and supported
 // console modules.
 func TestWelcome(t *testing.T) {
+	shyfttest.PgTestDbSetup()
 	tester := newTester(t, nil)
 	defer tester.Close(t)
 

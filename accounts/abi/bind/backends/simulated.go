@@ -40,6 +40,7 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/event"
 	"github.com/ShyftNetwork/go-empyrean/params"
 	"github.com/ShyftNetwork/go-empyrean/rpc"
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 )
 
 // This nil assignment ensures compile time that SimulatedBackend implements bind.ContractBackend.
@@ -72,7 +73,7 @@ type SimulatedBackend struct {
 // for testing purposes.
 func NewSimulatedBackend(alloc core.GenesisAlloc) *SimulatedBackend {
 	database, _ := ethdb.NewMemDatabase()
-	core.TruncateTables()
+	shyfttest.TruncateTables()
 	genesis := core.Genesis{Config: params.AllEthashProtocolChanges, Alloc: alloc}
 	genesis.MustCommit(database)
 	blockchain, _ := core.NewBlockChain(database, nil, genesis.Config, ethash.NewFaker(), vm.Config{})
@@ -93,7 +94,7 @@ func (b *SimulatedBackend) Commit() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	//@SHYFT //SETS UP OUR TEST ENV
-	core.TruncateTables()
+	shyfttest.TruncateTables()
 	eth.NewShyftTestLDB()
 	shyftTracer := new(eth.ShyftTracer)
 	core.SetIShyftTracer(shyftTracer)

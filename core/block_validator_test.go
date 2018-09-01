@@ -26,6 +26,7 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/core/vm"
 	"github.com/ShyftNetwork/go-empyrean/ethdb"
 	"github.com/ShyftNetwork/go-empyrean/params"
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 )
 
 // Tests that simple header verification works, for both good and bad blocks.
@@ -72,7 +73,7 @@ func TestHeaderVerification(t *testing.T) {
 			case <-time.After(25 * time.Millisecond):
 			}
 		}
-		TruncateTables()
+		shyfttest.TruncateTables()
 		chain.InsertChain(blocks[i : i+1])
 	}
 }

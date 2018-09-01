@@ -24,7 +24,6 @@ import (
 
 	"github.com/ShyftNetwork/go-empyrean/internal/cmdtest"
 	"github.com/ShyftNetwork/go-empyrean/shyfttest"
-	"github.com/ShyftNetwork/go-empyrean/core"
 	"github.com/docker/docker/pkg/reexec"
 )
 
@@ -73,7 +72,7 @@ func TestMain(m *testing.M) {
 // child g gets a temporary data directory.
 func runGeth(t *testing.T, args ...string) *testgeth {
 	//fmt.Println("Running Geth With These Args -->", args)
-	core.TruncateTables()
+	shyfttest.TruncateTables()
 	tt := &testgeth{}
 	tt.TestCmd = cmdtest.NewTestCmd(t, tt)
 	for i, arg := range args {

@@ -39,6 +39,7 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/p2p"
 	"github.com/ShyftNetwork/go-empyrean/p2p/discover"
 	"github.com/ShyftNetwork/go-empyrean/params"
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 )
 
 var (
@@ -166,7 +167,7 @@ func newTestProtocolManager(lightSync bool, blocks int, generator func(int, *cor
 		bloomIndexer.Start(blockchain)
 
 		gchain, _ := core.GenerateChain(gspec.Config, genesis, ethash.NewFaker(), db, blocks, generator)
-		core.TruncateTables()
+		shyfttest.TruncateTables()
 		if _, err := blockchain.InsertChain(gchain); err != nil {
 			panic(err)
 		}

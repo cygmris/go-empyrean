@@ -19,6 +19,7 @@ const (
 
 var blockExplorerDb *sql.DB
 
+// ConnStr String Made available for Testing & DbCleaner
 var connStr = connectionStr()
 
 // InitDB - initalizes a Postgresql Database for use by the Blockexplorer

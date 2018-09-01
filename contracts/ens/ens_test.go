@@ -57,7 +57,6 @@ func TestENS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("can't deploy root registry: %v", err)
 	}
-	core.TruncateTables()
 	contractBackend.Commit()
 
 	// Set ourself as the owner of the name.

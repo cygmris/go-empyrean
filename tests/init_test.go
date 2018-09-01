@@ -206,7 +206,7 @@ func (tm *testMatcher) walk(t *testing.T, dir string, runTest interface{}) {
 			return nil
 		}
 		if filepath.Ext(path) == ".json" {
-			// shyfttest.PgTestDbSetup()
+			shyfttest.TruncateTables()
 			t.Run(name, func(t *testing.T) { shyfttest.PgTestDbSetup(); tm.runTestFile(t, path, name, runTest) })
 		}
 		return nil
@@ -232,7 +232,7 @@ func (tm *testMatcher) runTestFile(t *testing.T, path, name string, runTest inte
 	// @SHYFT NOTE: Clear pg database
 	shyfttest.PgTestDbSetup()
 	//@SHYFT //SETS UP OUR TEST ENV
-	core.TruncateTables()
+	shyfttest.TruncateTables()
 	eth.NewShyftTestLDB()
 	shyftTracer := new(eth.ShyftTracer)
 	core.SetIShyftTracer(shyftTracer)
@@ -251,7 +251,7 @@ func (tm *testMatcher) runTestFile(t *testing.T, path, name string, runTest inte
 	if len(keys) == 1 {
 		// shyfttest.PgTestDbSetup()
 		//@SHYFT //SETS UP OUR TEST ENV
-		core.TruncateTables()
+		shyfttest.TruncateTables()
 		eth.NewShyftTestLDB()
 		shyftTracer := new(eth.ShyftTracer)
 		core.SetIShyftTracer(shyftTracer)

@@ -35,6 +35,7 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/p2p"
 	"github.com/ShyftNetwork/go-empyrean/params"
 	"github.com/ShyftNetwork/go-empyrean/rlp"
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 	"github.com/ShyftNetwork/go-empyrean/trie"
 )
 
@@ -51,13 +52,19 @@ func expectResponse(r p2p.MsgReader, msgcode, reqID, bv uint64, data interface{}
 }
 
 // Tests that block headers can be retrieved from a remote chain based on user queries.
-func TestGetBlockHeadersLes1(t *testing.T) { testGetBlockHeaders(t, 1) }
-func TestGetBlockHeadersLes2(t *testing.T) { testGetBlockHeaders(t, 2) }
+func TestGetBlockHeadersLes1(t *testing.T) {
+	shyfttest.PgTestDbSetup()
+	testGetBlockHeaders(t, 1)
+}
+func TestGetBlockHeadersLes2(t *testing.T) {
+	shyfttest.PgTestDbSetup()
+	testGetBlockHeaders(t, 2)
+}
 
 func testGetBlockHeaders(t *testing.T, protocol int) {
 	db, _ := ethdb.NewMemDatabase()
 	// @SHYFT NOTE: clear pg db
-	// core.TruncateTables()
+	shyfttest.TruncateTables()
 	pm := newTestProtocolManagerMust(t, false, downloader.MaxHashFetch+15, nil, nil, nil, db)
 	bc := pm.blockchain.(*core.BlockChain)
 	peer, _ := newTestPeer(t, "peer", protocol, pm, true)
@@ -183,12 +190,18 @@ func testGetBlockHeaders(t *testing.T, protocol int) {
 }
 
 // Tests that block contents can be retrieved from a remote chain based on their hashes.
-func TestGetBlockBodiesLes1(t *testing.T) { testGetBlockBodies(t, 1) }
-func TestGetBlockBodiesLes2(t *testing.T) { testGetBlockBodies(t, 2) }
+func TestGetBlockBodiesLes1(t *testing.T) {
+	shyfttest.PgTestDbSetup()
+	testGetBlockBodies(t, 1)
+}
+func TestGetBlockBodiesLes2(t *testing.T) {
+	shyfttest.PgTestDbSetup()
+	testGetBlockBodies(t, 2)
+}
 
 func testGetBlockBodies(t *testing.T, protocol int) {
 	db, _ := ethdb.NewMemDatabase()
-	core.TruncateTables()
+	shyfttest.TruncateTables()
 	pm := newTestProtocolManagerMust(t, false, downloader.MaxBlockFetch+15, nil, nil, nil, db)
 	bc := pm.blockchain.(*core.BlockChain)
 	peer, _ := newTestPeer(t, "peer", protocol, pm, true)
@@ -261,15 +274,20 @@ func testGetBlockBodies(t *testing.T, protocol int) {
 }
 
 // Tests that the contract codes can be retrieved based on account addresses.
-func TestGetCodeLes1(t *testing.T) { testGetCode(t, 1) }
-func TestGetCodeLes2(t *testing.T) { testGetCode(t, 2) }
+func TestGetCodeLes1(t *testing.T) {
+	shyfttest.PgTestDbSetup()
+	testGetCode(t, 1)
+}
+func TestGetCodeLes2(t *testing.T) {
+	shyfttest.PgTestDbSetup()
+	testGetCode(t, 2)
+}
 
 func testGetCode(t *testing.T, protocol int) {
 	// Assemble the test environment
 	db, _ := ethdb.NewMemDatabase()
 
 	//@SHYFT //SETS UP OUR TEST ENV
-	core.TruncateTables()
 	eth.NewShyftTestLDB()
 	shyftTracer := new(eth.ShyftTracer)
 	core.SetIShyftTracer(shyftTracer)
@@ -313,13 +331,18 @@ func testGetCode(t *testing.T, protocol int) {
 }
 
 // Tests that the transaction receipts can be retrieved based on hashes.
-func TestGetReceiptLes1(t *testing.T) { testGetReceipt(t, 1) }
-func TestGetReceiptLes2(t *testing.T) { testGetReceipt(t, 2) }
+func TestGetReceiptLes1(t *testing.T) {
+	shyfttest.PgTestDbSetup()
+	testGetReceipt(t, 1)
+}
+func TestGetReceiptLes2(t *testing.T) {
+	shyfttest.PgTestDbSetup()
+	testGetReceipt(t, 2)
+}
 
 func testGetReceipt(t *testing.T, protocol int) {
 	// Assemble the test environment
 	db, _ := ethdb.NewMemDatabase()
-	core.TruncateTables()
 	pm := newTestProtocolManagerMust(t, false, 4, testChainGen, nil, nil, db)
 	bc := pm.blockchain.(*core.BlockChain)
 	peer, _ := newTestPeer(t, "peer", protocol, pm, true)
@@ -342,13 +365,18 @@ func testGetReceipt(t *testing.T, protocol int) {
 }
 
 // Tests that trie merkle proofs can be retrieved
-func TestGetProofsLes1(t *testing.T) { testGetProofs(t, 1) }
-func TestGetProofsLes2(t *testing.T) { testGetProofs(t, 2) }
+func TestGetProofsLes1(t *testing.T) {
+	shyfttest.PgTestDbSetup()
+	testGetProofs(t, 1)
+}
+func TestGetProofsLes2(t *testing.T) {
+	shyfttest.PgTestDbSetup()
+	testGetProofs(t, 2)
+}
 
 func testGetProofs(t *testing.T, protocol int) {
 	// Assemble the test environment
 	db, _ := ethdb.NewMemDatabase()
-	core.TruncateTables()
 	pm := newTestProtocolManagerMust(t, false, 4, testChainGen, nil, nil, db)
 	bc := pm.blockchain.(*core.BlockChain)
 	peer, _ := newTestPeer(t, "peer", protocol, pm, true)
@@ -401,8 +429,14 @@ func testGetProofs(t *testing.T, protocol int) {
 }
 
 // Tests that CHT proofs can be correctly retrieved.
-func TestGetCHTProofsLes1(t *testing.T) { testGetCHTProofs(t, 1) }
-func TestGetCHTProofsLes2(t *testing.T) { testGetCHTProofs(t, 2) }
+func TestGetCHTProofsLes1(t *testing.T) {
+	shyfttest.PgTestDbSetup()
+	testGetCHTProofs(t, 1)
+}
+func TestGetCHTProofsLes2(t *testing.T) {
+	shyfttest.PgTestDbSetup()
+	testGetCHTProofs(t, 2)
+}
 
 func testGetCHTProofs(t *testing.T, protocol int) {
 	// Figure out the client's CHT frequency
@@ -412,7 +446,7 @@ func testGetCHTProofs(t *testing.T, protocol int) {
 	}
 	// Assemble the test environment
 	db, _ := ethdb.NewMemDatabase()
-	core.TruncateTables()
+	shyfttest.TruncateTables()
 	pm := newTestProtocolManagerMust(t, false, int(frequency)+light.HelperTrieProcessConfirmations, testChainGen, nil, nil, db)
 	bc := pm.blockchain.(*core.BlockChain)
 	peer, _ := newTestPeer(t, "peer", protocol, pm, true)
@@ -481,7 +515,7 @@ func testGetCHTProofs(t *testing.T, protocol int) {
 func TestGetBloombitsProofs(t *testing.T) {
 	// Assemble the test environment
 	db, _ := ethdb.NewMemDatabase()
-	core.TruncateTables()
+	shyfttest.PgTestDbSetup()
 	pm := newTestProtocolManagerMust(t, false, light.BloomTrieFrequency+256, testChainGen, nil, nil, db)
 	bc := pm.blockchain.(*core.BlockChain)
 	peer, _ := newTestPeer(t, "peer", 2, pm, true)
@@ -521,7 +555,7 @@ func TestGetBloombitsProofs(t *testing.T) {
 
 func TestTransactionStatusLes2(t *testing.T) {
 	db, _ := ethdb.NewMemDatabase()
-	core.TruncateTables()
+	shyfttest.PgTestDbSetup()
 	pm := newTestProtocolManagerMust(t, false, 0, nil, nil, nil, db)
 	chain := pm.blockchain.(*core.BlockChain)
 	config := core.DefaultTxPoolConfig

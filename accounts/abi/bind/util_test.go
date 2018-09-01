@@ -30,6 +30,7 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/core/types"
 	"github.com/ShyftNetwork/go-empyrean/crypto"
 	"github.com/ShyftNetwork/go-empyrean/eth"
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 )
 
 // @SHYFT NOTE: test ShyftTracer
@@ -67,6 +68,7 @@ var waitDeployedTests = map[string]struct {
 // }
 func TestWaitDeployed(t *testing.T) {
 	for name, test := range waitDeployedTests {
+		shyfttest.PgTestDbSetup()
 		backend := backends.NewSimulatedBackend(core.GenesisAlloc{
 			crypto.PubkeyToAddress(testKey.PublicKey): {Balance: big.NewInt(10000000000)},
 		})
@@ -82,10 +84,8 @@ func TestWaitDeployed(t *testing.T) {
 			mined   = make(chan struct{})
 			ctx     = context.Background()
 		)
-		core.TruncateTables()
 		eth.NewShyftTestLDB()
 		shyftTracer := new(eth.ShyftTracer)
-		core.SetIShyftTracer(shyftTracer)
 
 		ethConf := &eth.Config{
 			Genesis:   core.DeveloperGenesisBlock(15, common.Address{}),
@@ -98,13 +98,14 @@ func TestWaitDeployed(t *testing.T) {
 		eth.SetGlobalConfig(ethConf)
 		eth.InitTracerEnv()
 		go func() {
+			core.SetIShyftTracer(shyftTracer)
 
 			address, err = bind.WaitDeployed(ctx, backend, tx)
 			close(mined)
 		}()
 
 		// Send and mine the transaction.
-		// core.TruncateTables()
+		// shyfttest.TruncateTables()
 		backend.SendTransaction(ctx, tx)
 		backend.Commit()
 

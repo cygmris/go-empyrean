@@ -28,6 +28,7 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/core/vm"
 	"github.com/ShyftNetwork/go-empyrean/ethdb"
 	"github.com/ShyftNetwork/go-empyrean/params"
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 	"github.com/ShyftNetwork/go-empyrean/trie"
 	"github.com/davecgh/go-spew/spew"
 )
@@ -40,9 +41,9 @@ func TestNodeIterator(t *testing.T) {
 		genesis    = gspec.MustCommit(fulldb)
 	)
 	gspec.MustCommit(lightdb)
+	shyfttest.PgTestDbSetup()
 	blockchain, _ := core.NewBlockChain(fulldb, nil, params.TestChainConfig, ethash.NewFullFaker(), vm.Config{})
 	gchain, _ := core.GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), fulldb, 4, testChainGen)
-	core.TruncateTables()
 	if _, err := blockchain.InsertChain(gchain); err != nil {
 		panic(err)
 	}

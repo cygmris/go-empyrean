@@ -28,6 +28,7 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/eth"
 	"github.com/ShyftNetwork/go-empyrean/ethdb"
 	"github.com/ShyftNetwork/go-empyrean/light"
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 )
 
 var testBankSecureTrieKey = secAddr(testBankAddress)
@@ -78,6 +79,7 @@ func tfCodeAccess(db ethdb.Database, bhash common.Hash, number uint64) light.Odr
 
 func testAccess(t *testing.T, protocol int, fn accessTestFn) {
 	// Assemble the test environment
+	shyfttest.PgTestDbSetup()
 	peers := newPeerSet()
 	dist := newRequestDistributor(peers, make(chan struct{}))
 	rm := newRetrieveManager(peers, dist, nil)
@@ -85,7 +87,7 @@ func testAccess(t *testing.T, protocol int, fn accessTestFn) {
 	ldb, _ := ethdb.NewMemDatabase()
 	odr := NewLesOdr(ldb, light.NewChtIndexer(db, true), light.NewBloomTrieIndexer(db, true), eth.NewBloomIndexer(db, light.BloomTrieFrequency), rm)
 	//@SHYFT //SETS UP OUR TEST ENV
-	core.TruncateTables()
+	shyfttest.TruncateTables()
 	eth.NewShyftTestLDB()
 	shyftTracer := new(eth.ShyftTracer)
 	core.SetIShyftTracer(shyftTracer)

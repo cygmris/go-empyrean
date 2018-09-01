@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
+
 	"github.com/ShyftNetwork/go-empyrean/accounts/abi/bind"
 	"github.com/ShyftNetwork/go-empyrean/accounts/abi/bind/backends"
 	"github.com/ShyftNetwork/go-empyrean/common"
@@ -40,6 +42,13 @@ var (
 	addr1   = crypto.PubkeyToAddress(key1.PublicKey)
 	addr2   = crypto.PubkeyToAddress(key2.PublicKey)
 )
+
+// func TestMain(m *testing.M) {
+// 	shyfttest.PgTestDbSetup()
+// 	retCode := m.Run()
+// 	shyfttest.PgTestTearDown()
+// 	os.Exit(retCode)
+// }
 
 func newTestBackend() *backends.SimulatedBackend {
 	return backends.NewSimulatedBackend(core.GenesisAlloc{
@@ -63,6 +72,7 @@ func deploy(prvKey *ecdsa.PrivateKey, amount *big.Int, backend *backends.Simulat
 func TestIssueAndReceive(t *testing.T) {
 	path := filepath.Join(os.TempDir(), "chequebook-test.json")
 	backend := newTestBackend()
+	shyfttest.PgTestDbSetup()
 	addr0, err := deploy(key0, big.NewInt(0), backend)
 	if err != nil {
 		t.Fatalf("deploy contract: expected no error, got %v", err)
@@ -221,6 +231,7 @@ func TestVerifyErrors(t *testing.T) {
 
 func TestDeposit(t *testing.T) {
 	path0 := filepath.Join(os.TempDir(), "chequebook-test-0.json")
+	shyfttest.PgTestDbSetup()
 	backend := newTestBackend()
 	contr0, _ := deploy(key0, new(big.Int), backend)
 

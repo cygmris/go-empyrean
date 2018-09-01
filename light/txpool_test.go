@@ -30,6 +30,7 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/core/vm"
 	"github.com/ShyftNetwork/go-empyrean/ethdb"
 	"github.com/ShyftNetwork/go-empyrean/params"
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 )
 
 type testTxRelay struct {
@@ -88,10 +89,11 @@ func TestTxPool(t *testing.T) {
 	)
 	gspec.MustCommit(ldb)
 	// Assemble the test environment
+	// @SHYFT NOTE: Clear PG DB before test
+	shyfttest.PgTestDbSetup()
 	blockchain, _ := core.NewBlockChain(sdb, nil, params.TestChainConfig, ethash.NewFullFaker(), vm.Config{})
 	gchain, _ := core.GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), sdb, poolTestBlocks, txPoolTestChainGen)
-	// @SHYFT NOTE: Clear PG DB before test
-	core.TruncateTables()
+
 	if _, err := blockchain.InsertChain(gchain); err != nil {
 		panic(err)
 	}

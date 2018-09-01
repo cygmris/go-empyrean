@@ -35,6 +35,7 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/ethdb"
 	"github.com/ShyftNetwork/go-empyrean/params"
 	"github.com/ShyftNetwork/go-empyrean/rlp"
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 )
 
 // A BlockTest checks handling of entire blocks.
@@ -174,7 +175,7 @@ func (t *BlockTest) insertBlocks(blockchain *core.BlockChain) ([]btBlock, error)
 		}
 		// RLP decoding worked, try to insert into chain:
 		blocks := types.Blocks{cb}
-		core.TruncateTables()
+		shyfttest.TruncateTables()
 		i, err := blockchain.InsertChain(blocks)
 		if err != nil {
 			if b.BlockHeader == nil {

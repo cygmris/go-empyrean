@@ -39,6 +39,7 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/p2p"
 	"github.com/ShyftNetwork/go-empyrean/p2p/discover"
 	"github.com/ShyftNetwork/go-empyrean/params"
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 )
 
 var (
@@ -62,7 +63,7 @@ func newTestProtocolManager(mode downloader.SyncMode, blocks int, generator func
 		blockchain, _ = core.NewBlockChain(db, nil, gspec.Config, engine, vm.Config{})
 	)
 	//@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-	core.TruncateTables()
+	shyfttest.TruncateTables()
 	chain, _ := core.GenerateChain(gspec.Config, genesis, ethash.NewFaker(), db, blocks, generator)
 	if _, err := blockchain.InsertChain(chain); err != nil {
 		panic(err)

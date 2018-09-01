@@ -24,6 +24,7 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/core/vm"
 	"github.com/ShyftNetwork/go-empyrean/ethdb"
 	"github.com/ShyftNetwork/go-empyrean/params"
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 )
 
 // Tests that DAO-fork enabled clients can properly filter out fork-commencing
@@ -57,11 +58,11 @@ func TestDAOForkRangeExtradata(t *testing.T) {
 
 	conBc, _ := NewBlockChain(conDb, nil, &conConf, ethash.NewFaker(), vm.Config{})
 	defer conBc.Stop()
-	TruncateTables()
+	shyfttest.TruncateTables()
 	if _, err := proBc.InsertChain(prefix); err != nil {
 		t.Fatalf("pro-fork: failed to import chain prefix: %v", err)
 	}
-	TruncateTables()
+	shyfttest.TruncateTables()
 	if _, err := conBc.InsertChain(prefix); err != nil {
 		t.Fatalf("con-fork: failed to import chain prefix: %v", err)
 	}
@@ -77,7 +78,7 @@ func TestDAOForkRangeExtradata(t *testing.T) {
 		for j := 0; j < len(blocks)/2; j++ {
 			blocks[j], blocks[len(blocks)-1-j] = blocks[len(blocks)-1-j], blocks[j]
 		}
-		TruncateTables()
+		shyfttest.TruncateTables()
 		if _, err := bc.InsertChain(blocks); err != nil {
 			t.Fatalf("failed to import contra-fork chain for expansion: %v", err)
 		}
@@ -103,7 +104,7 @@ func TestDAOForkRangeExtradata(t *testing.T) {
 		for j := 0; j < len(blocks)/2; j++ {
 			blocks[j], blocks[len(blocks)-1-j] = blocks[len(blocks)-1-j], blocks[j]
 		}
-		TruncateTables()
+		shyfttest.TruncateTables()
 		if _, err := bc.InsertChain(blocks); err != nil {
 			t.Fatalf("failed to import pro-fork chain for expansion: %v", err)
 		}
@@ -130,7 +131,7 @@ func TestDAOForkRangeExtradata(t *testing.T) {
 	for j := 0; j < len(blocks)/2; j++ {
 		blocks[j], blocks[len(blocks)-1-j] = blocks[len(blocks)-1-j], blocks[j]
 	}
-	TruncateTables()
+	shyfttest.TruncateTables()
 	if _, err := bc.InsertChain(blocks); err != nil {
 		t.Fatalf("failed to import contra-fork chain for expansion: %v", err)
 	}
