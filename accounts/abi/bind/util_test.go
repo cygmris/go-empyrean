@@ -19,6 +19,7 @@ package bind_test
 import (
 	"context"
 	"math/big"
+	"os"
 	"testing"
 	"time"
 
@@ -60,15 +61,16 @@ var waitDeployedTests = map[string]struct {
 }
 
 // @SHYFT NOTE: Setup DB for Testing Before Each Test
-// func TestMain(m *testing.M) {
-// 	shyfttest.PgTestDbSetup()
-// 	retCode := m.Run()
-// 	shyfttest.PgTestTearDown()
-// 	os.Exit(retCode)
-// }
+func TestMain(m *testing.M) {
+	shyfttest.PgTestDbSetup()
+	retCode := m.Run()
+	shyfttest.PgTestTearDown()
+	os.Exit(retCode)
+}
 func TestWaitDeployed(t *testing.T) {
 	for name, test := range waitDeployedTests {
-		shyfttest.PgTestDbSetup()
+		// @SHYFT NOTE: Prepare Test DB & Teardown
+		shyfttest.TruncateTables()
 		backend := backends.NewSimulatedBackend(core.GenesisAlloc{
 			crypto.PubkeyToAddress(testKey.PublicKey): {Balance: big.NewInt(10000000000)},
 		})
@@ -105,7 +107,6 @@ func TestWaitDeployed(t *testing.T) {
 		}()
 
 		// Send and mine the transaction.
-		// shyfttest.TruncateTables()
 		backend.SendTransaction(ctx, tx)
 		backend.Commit()
 
@@ -120,6 +121,5 @@ func TestWaitDeployed(t *testing.T) {
 		case <-time.After(2 * time.Second):
 			t.Errorf("test %q: timeout", name)
 		}
-		shyfttest.PgTestTearDown()
 	}
 }

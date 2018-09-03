@@ -43,7 +43,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestVM(t *testing.T) {
-	t.Parallel()
 	//@SHYFT //SETS UP OUR TEST ENV - Parallel tests creating issues so the below may not work with parallel
 	eth.NewShyftTestLDB()
 	shyftTracer := new(eth.ShyftTracer)
@@ -59,6 +58,9 @@ func TestVM(t *testing.T) {
 
 	eth.SetGlobalConfig(ethConf)
 	eth.InitTracerEnv()
+	shyfttest.CleanNonAccountTables()
+
+	t.Parallel()
 	vmt := new(testMatcher)
 	vmt.fails("^vmSystemOperationsTest.json/createNameRegistrator$", "fails without parallel execution")
 

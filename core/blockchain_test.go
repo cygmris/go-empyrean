@@ -553,6 +553,7 @@ func testInsertNonceError(t *testing.T, full bool) {
 			failNum uint64
 		)
 		if full {
+			shyfttest.CleanNonAccountTables()
 			blocks := makeBlockChain(blockchain.CurrentBlock(), i, ethash.NewFaker(), db, 0)
 
 			failAt = rand.Int() % len(blocks)
@@ -1374,10 +1375,7 @@ func TestLargeReorgTrieGC(t *testing.T) {
 			t.Fatalf("competitor %d: low TD chain became processed", i)
 		}
 	}
-	// //@Shyft Note: Truncate Posgres Data Tables To Allow Reuse of Test Data
-	// shyfttest.TruncateTables()
-	// Import the head of the competitor chain, triggering the reorg and ensure we
-	// successfully reprocess all the stashed away blocks.
+	shyfttest.CleanNonAccountTables()
 	if _, err := chain.InsertChain(competitor[len(competitor)-2:]); err != nil {
 		t.Fatalf("failed to finalize competitor chain: %v", err)
 	}

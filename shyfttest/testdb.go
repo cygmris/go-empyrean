@@ -11,7 +11,7 @@ import (
 //@SHYFT NOTE: Side effects from PG database therefore need to reset before running
 
 // Cleaner - wrapper for testdb
-var Cleaner = dbcleaner.New(dbcleaner.SetNumberOfRetry(10), dbcleaner.SetLockTimeout(5*time.Second))
+var Cleaner = dbcleaner.New(dbcleaner.SetNumberOfRetry(10), dbcleaner.SetLockTimeout(5*time.Second), dbcleaner.SetRetryInterval(2*time.Second))
 
 const connStrTest = "user=postgres dbname=shyftdbtest password=docker sslmode=disable"
 
@@ -43,6 +43,13 @@ func PgTestTearDown() {
 	Cleaner.Close()
 }
 
+// CleanNonAcccountTables - resets all tables except accounts
+func CleanNonAccountTables() {
+	Cleaner.Clean("blocks")
+	Cleaner.Clean("txs")
+	Cleaner.Clean("internaltxs")
+}
+
 // PgRecreateTables - recreates pg database tables
 func PgRecreateTables() {
 	cmdStr := "$GOPATH/src/github.com/ShyftNetwork/go-empyrean/shyftdb/postgres_setup_test/recreate_tables_test.sh"
@@ -55,7 +62,7 @@ func PgRecreateTables() {
 	}
 }
 
-// Cleans All the Tables In Tests
+// TruncateTables - cleans All the Tables In Tests
 func TruncateTables() {
 	Cleaner.Acquire("accounts")
 	Cleaner.Acquire("blocks")

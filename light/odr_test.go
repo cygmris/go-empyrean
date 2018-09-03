@@ -44,7 +44,7 @@ const (
 	testAddress = "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182"
 )
 
-//@SHYFT NOTE: Side effects from PG database therefore need to reset before running
+// @SHYFT NOTE: Side effects from PG database therefore need to reset before running
 // func TestMain(m *testing.M) {
 // 	shyfttest.PgTestDbSetup()
 // 	retCode := m.Run()
@@ -247,6 +247,7 @@ func testChainGen(i int, block *core.BlockGen) {
 func testChainOdr(t *testing.T, protocol int, fn odrTestFn) {
 	//@SHYFT //SETS UP OUR TEST ENV
 	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	eth.NewShyftTestLDB()
 	shyftTracer := new(eth.ShyftTracer)
 	core.SetIShyftTracer(shyftTracer)
@@ -270,10 +271,10 @@ func testChainOdr(t *testing.T, protocol int, fn odrTestFn) {
 	)
 	gspec.MustCommit(ldb)
 	// Assemble the test environment
-
 	blockchain, _ := core.NewBlockChain(sdb, nil, params.TestChainConfig, ethash.NewFullFaker(), vm.Config{})
 	gchain, _ := core.GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), sdb, 4, testChainGen)
-	shyfttest.PgTestDbSetup()
+	shyfttest.CleanNonAccountTables()
+
 	if _, err := blockchain.InsertChain(gchain); err != nil {
 		t.Fatal(err)
 	}

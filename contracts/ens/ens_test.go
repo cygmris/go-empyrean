@@ -23,9 +23,12 @@ import (
 
 	"github.com/ShyftNetwork/go-empyrean/accounts/abi/bind"
 	"github.com/ShyftNetwork/go-empyrean/accounts/abi/bind/backends"
+	"github.com/ShyftNetwork/go-empyrean/common"
+	"github.com/ShyftNetwork/go-empyrean/consensus/ethash"
 	"github.com/ShyftNetwork/go-empyrean/contracts/ens/contract"
 	"github.com/ShyftNetwork/go-empyrean/core"
 	"github.com/ShyftNetwork/go-empyrean/crypto"
+	"github.com/ShyftNetwork/go-empyrean/eth"
 	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 	"github.com/docker/docker/pkg/reexec"
 )
@@ -35,6 +38,11 @@ var (
 	name   = "my name on ENS"
 	hash   = crypto.Keccak256Hash([]byte("my content"))
 	addr   = crypto.PubkeyToAddress(key.PublicKey)
+)
+
+// @SHYFT NOTE: test ShyftTracer
+const (
+	testAddress = "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182"
 )
 
 func TestMain(m *testing.M) {
@@ -51,6 +59,21 @@ func TestMain(m *testing.M) {
 }
 
 func TestENS(t *testing.T) {
+	eth.NewShyftTestLDB()
+	shyftTracer := new(eth.ShyftTracer)
+	core.SetIShyftTracer(shyftTracer)
+
+	ethConf := &eth.Config{
+		Genesis:   core.DeveloperGenesisBlock(15, common.Address{}),
+		Etherbase: common.HexToAddress(testAddress),
+		Ethash: ethash.Config{
+			PowMode: ethash.ModeTest,
+		},
+	}
+
+	eth.SetGlobalConfig(ethConf)
+	eth.InitTracerEnv()
+	shyfttest.CleanNonAccountTables()
 	contractBackend := backends.NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(1000000000)}})
 	transactOpts := bind.NewKeyedTransactor(key)
 	ensAddr, ens, err := DeployENS(transactOpts, contractBackend)

@@ -43,13 +43,6 @@ var (
 	addr2   = crypto.PubkeyToAddress(key2.PublicKey)
 )
 
-// func TestMain(m *testing.M) {
-// 	shyfttest.PgTestDbSetup()
-// 	retCode := m.Run()
-// 	shyfttest.PgTestTearDown()
-// 	os.Exit(retCode)
-// }
-
 func newTestBackend() *backends.SimulatedBackend {
 	return backends.NewSimulatedBackend(core.GenesisAlloc{
 		addr0: {Balance: big.NewInt(1000000000)},
@@ -71,8 +64,10 @@ func deploy(prvKey *ecdsa.PrivateKey, amount *big.Int, backend *backends.Simulat
 
 func TestIssueAndReceive(t *testing.T) {
 	path := filepath.Join(os.TempDir(), "chequebook-test.json")
+	// @SHYFT NOTE: Prepare Test DB & Teardown
+	// shyfttest.PgTestDbSetup()
+	// defer shyfttest.PgTestTearDown()
 	backend := newTestBackend()
-	shyfttest.PgTestDbSetup()
 	addr0, err := deploy(key0, big.NewInt(0), backend)
 	if err != nil {
 		t.Fatalf("deploy contract: expected no error, got %v", err)
@@ -115,7 +110,6 @@ func TestIssueAndReceive(t *testing.T) {
 	if received.Cmp(big.NewInt(43)) != 0 {
 		t.Errorf("expected: %v, got %v", "43", received)
 	}
-	shyfttest.PgTestTearDown()
 }
 
 func TestCheckbookFile(t *testing.T) {
@@ -230,8 +224,10 @@ func TestVerifyErrors(t *testing.T) {
 }
 
 func TestDeposit(t *testing.T) {
-	path0 := filepath.Join(os.TempDir(), "chequebook-test-0.json")
+	// @SHYFT NOTE: Prepare Test DB & Teardown
 	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
+	path0 := filepath.Join(os.TempDir(), "chequebook-test-0.json")
 	backend := newTestBackend()
 	contr0, _ := deploy(key0, new(big.Int), backend)
 
@@ -370,6 +366,9 @@ func TestDeposit(t *testing.T) {
 }
 
 func TestCash(t *testing.T) {
+	// @SHYFT NOTE: Prepare Test DB & Teardown
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	path := filepath.Join(os.TempDir(), "chequebook-test.json")
 	backend := newTestBackend()
 	contr0, _ := deploy(key0, common.Big2, backend)

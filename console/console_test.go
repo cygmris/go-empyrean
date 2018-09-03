@@ -83,6 +83,14 @@ type tester struct {
 	output    *bytes.Buffer
 }
 
+//@SHYFT NOTE: Side effects from PG database therefore need to reset before running
+func TestMain(m *testing.M) {
+	shyfttest.PgTestDbSetup()
+	retCode := m.Run()
+	shyfttest.PgTestTearDown()
+	os.Exit(retCode)
+}
+
 // newTester creates a test environment based on which the console can operate.
 // Please ensure you call Close() on the returned tester to avoid leaks.
 func newTester(t *testing.T, confOverride func(*eth.Config)) *tester {
@@ -161,7 +169,7 @@ func (env *tester) Close(t *testing.T) {
 // the instance name, coinbase account, block number, data directory and supported
 // console modules.
 func TestWelcome(t *testing.T) {
-	shyfttest.PgTestDbSetup()
+	shyfttest.CleanNonAccountTables()
 	tester := newTester(t, nil)
 	defer tester.Close(t)
 

@@ -3,7 +3,6 @@ package shyftdb
 import (
 	"encoding/json"
 	"math/big"
-	"os"
 	"strings"
 	"testing"
 
@@ -26,15 +25,17 @@ const (
 // @SHYFT NOTE: Added to clear and reset pg db before test
 // Setup DB for Testing Before Each Test
 
-func TestMain(m *testing.M) {
-	shyfttest.PgTestDbSetup()
-	retCode := m.Run()
-	shyfttest.PgTestTearDown()
-	os.Exit(retCode)
-}
+// func TestMain(m *testing.M) {
+// 	shyfttest.PgTestDbSetup()
+// 	retCode := m.Run()
+// 	shyfttest.PgTestTearDown()
+// 	os.Exit(retCode)
+// }
 
 func TestBlock(t *testing.T) {
 	//SET UP FOR TEST FUNCTIONS
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	eth.NewShyftTestLDB()
 	shyftTracer := new(eth.ShyftTracer)
 	core.SetIShyftTracer(shyftTracer)

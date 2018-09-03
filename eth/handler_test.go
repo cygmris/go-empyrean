@@ -35,11 +35,11 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/event"
 	"github.com/ShyftNetwork/go-empyrean/p2p"
 	"github.com/ShyftNetwork/go-empyrean/params"
-	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 )
 
 // Tests that protocol versions and modes of operations are matched up properly.
 func TestProtocolCompatibility(t *testing.T) {
+
 	// Define the compatibility chart
 	tests := []struct {
 		version    uint
@@ -52,11 +52,9 @@ func TestProtocolCompatibility(t *testing.T) {
 	// Make sure anything we screw up is restored
 	backup := ProtocolVersions
 	defer func() { ProtocolVersions = backup }()
-
 	// Try all available compatibility configs and check for errors
 	for i, tt := range tests {
 		ProtocolVersions = []uint{tt.version}
-
 		pm, _, err := newTestProtocolManager(tt.mode, 0, nil, nil)
 		if pm != nil {
 			defer pm.Stop()
@@ -72,7 +70,7 @@ func TestGetBlockHeaders62(t *testing.T) { testGetBlockHeaders(t, 62) }
 func TestGetBlockHeaders63(t *testing.T) { testGetBlockHeaders(t, 63) }
 
 func testGetBlockHeaders(t *testing.T, protocol int) {
-	shyfttest.PgTestDbSetup()
+
 	pm, _ := newTestProtocolManagerMust(t, downloader.FullSync, downloader.MaxHashFetch+15, nil, nil)
 	peer, _ := newTestPeer("peer", protocol, pm, true)
 	defer peer.close()
@@ -225,7 +223,6 @@ func testGetBlockHeaders(t *testing.T, protocol int) {
 			}
 		}
 	}
-	shyfttest.PgTestTearDown()
 }
 
 // Tests that block contents can be retrieved from a remote chain based on their hashes.
@@ -233,7 +230,7 @@ func TestGetBlockBodies62(t *testing.T) { testGetBlockBodies(t, 62) }
 func TestGetBlockBodies63(t *testing.T) { testGetBlockBodies(t, 63) }
 
 func testGetBlockBodies(t *testing.T, protocol int) {
-	shyfttest.PgTestDbSetup()
+
 	pm, _ := newTestProtocolManagerMust(t, downloader.FullSync, downloader.MaxBlockFetch+15, nil, nil)
 	peer, _ := newTestPeer("peer", protocol, pm, true)
 	defer peer.close()
@@ -299,7 +296,6 @@ func testGetBlockBodies(t *testing.T, protocol int) {
 			t.Errorf("test %d: bodies mismatch: %v", i, err)
 		}
 	}
-	shyfttest.PgTestTearDown()
 }
 
 // Tests that the node state database can be retrieved based on hashes.
@@ -341,8 +337,6 @@ func testGetNodeData(t *testing.T, protocol int) {
 			block.AddUncle(b3)
 		}
 	}
-	// Assemble the test environment
-	shyfttest.PgTestDbSetup()
 	pm, db := newTestProtocolManagerMust(t, downloader.FullSync, 4, generator, nil)
 	peer, _ := newTestPeer("peer", protocol, pm, true)
 	defer peer.close()
@@ -393,15 +387,13 @@ func testGetNodeData(t *testing.T, protocol int) {
 			}
 		}
 	}
-	shyfttest.PgTestTearDown()
 }
 
 // Tests that the transaction receipts can be retrieved based on hashes.
 func TestGetReceipt63(t *testing.T) { testGetReceipt(t, 63) }
 
 func testGetReceipt(t *testing.T, protocol int) {
-	// @SHYFT NOTE: Reset Pg DB
-	shyfttest.PgTestDbSetup()
+
 	// Define three accounts to simulate transactions with
 	acc1Key, _ := crypto.HexToECDSA("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
 	acc2Key, _ := crypto.HexToECDSA("49a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee")
@@ -441,7 +433,6 @@ func testGetReceipt(t *testing.T, protocol int) {
 	pm, _ := newTestProtocolManagerMust(t, downloader.FullSync, 4, generator, nil)
 	peer, _ := newTestPeer("peer", protocol, pm, true)
 	defer peer.close()
-
 	// Collect the hashes to request, and the response to expect
 	hashes, receipts := []common.Hash{}, []types.Receipts{}
 	for i := uint64(0); i <= pm.blockchain.CurrentBlock().NumberU64(); i++ {
@@ -452,7 +443,6 @@ func testGetReceipt(t *testing.T, protocol int) {
 	}
 	// Send the hash request and verify the response
 	p2p.Send(peer.app, 0x0f, hashes)
-	shyfttest.PgTestTearDown()
 	if err := p2p.ExpectMsg(peer.app, 0x10, receipts); err != nil {
 		t.Errorf("receipts mismatch: %v", err)
 	}

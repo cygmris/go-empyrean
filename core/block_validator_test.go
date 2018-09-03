@@ -31,8 +31,11 @@ import (
 
 // Tests that simple header verification works, for both good and bad blocks.
 func TestHeaderVerification(t *testing.T) {
-	// Create a simple chain to verify
+	// @SHYFT NOTE: Prepare Test DB & Teardown
 	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
+	// Create a simple chain to verify
+
 	var (
 		testdb, _ = ethdb.NewMemDatabase()
 		gspec     = &Genesis{Config: params.TestChainConfig}
@@ -46,6 +49,7 @@ func TestHeaderVerification(t *testing.T) {
 	// Run the header checker for blocks one-by-one, checking for both valid and invalid nonces
 	chain, _ := NewBlockChain(testdb, nil, params.TestChainConfig, ethash.NewFaker(), vm.Config{})
 	defer chain.Stop()
+	shyfttest.CleanNonAccountTables()
 
 	for i := 0; i < len(blocks); i++ {
 		for j, valid := range []bool{true, false} {
@@ -84,6 +88,9 @@ func TestHeaderConcurrentVerification8(t *testing.T)  { testHeaderConcurrentVeri
 func TestHeaderConcurrentVerification32(t *testing.T) { testHeaderConcurrentVerification(t, 32) }
 
 func testHeaderConcurrentVerification(t *testing.T, threads int) {
+	// @SHYFT NOTE: Prepare Test DB & Teardown
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	// Create a simple chain to verify
 	var (
 		testdb, _ = ethdb.NewMemDatabase()

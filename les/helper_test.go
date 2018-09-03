@@ -25,6 +25,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/ShyftNetwork/go-empyrean/shyfttest"
+
 	"github.com/ShyftNetwork/go-empyrean/common"
 	"github.com/ShyftNetwork/go-empyrean/consensus/ethash"
 	"github.com/ShyftNetwork/go-empyrean/core"
@@ -39,7 +41,6 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/p2p"
 	"github.com/ShyftNetwork/go-empyrean/p2p/discover"
 	"github.com/ShyftNetwork/go-empyrean/params"
-	"github.com/ShyftNetwork/go-empyrean/shyfttest"
 )
 
 var (
@@ -138,6 +139,9 @@ func testRCL() RequestCostList {
 // with the given number of blocks already known, and potential notification
 // channels for different events.
 func newTestProtocolManager(lightSync bool, blocks int, generator func(int, *core.BlockGen), peers *peerSet, odr *LesOdr, db ethdb.Database) (*ProtocolManager, error) {
+	// @SHYFT NOTE: Pg Test Setup
+	shyfttest.PgTestDbSetup()
+	defer shyfttest.PgTestTearDown()
 	var (
 		evmux  = new(event.TypeMux)
 		engine = ethash.NewFaker()
@@ -165,9 +169,22 @@ func newTestProtocolManager(lightSync bool, blocks int, generator func(int, *cor
 		bloomIndexer := eth.NewBloomIndexer(db, params.BloomBitsBlocks)
 		bloomIndexer.AddChildIndexer(bbtIndexer)
 		bloomIndexer.Start(blockchain)
-
 		gchain, _ := core.GenerateChain(gspec.Config, genesis, ethash.NewFaker(), db, blocks, generator)
-		shyfttest.TruncateTables()
+		eth.NewShyftTestLDB()
+		shyftTracer := new(eth.ShyftTracer)
+		core.SetIShyftTracer(shyftTracer)
+
+		ethConf := &eth.Config{
+			Genesis:   core.DeveloperGenesisBlock(15, common.Address{}),
+			Etherbase: common.HexToAddress(testAddress),
+			Ethash: ethash.Config{
+				PowMode: ethash.ModeTest,
+			},
+		}
+
+		eth.SetGlobalConfig(ethConf)
+		eth.InitTracerEnv()
+		shyfttest.CleanNonAccountTables()
 		if _, err := blockchain.InsertChain(gchain); err != nil {
 			panic(err)
 		}
