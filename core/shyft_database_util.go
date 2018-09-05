@@ -120,13 +120,14 @@ func swriteTransactions(sqldb *sql.DB, tx *types.Transaction, blockHash common.H
 		Status:      statusFromReciept,
 		IsContract:  isContract,
 	}
-	isContractCheck := IsContract(sqldb, txData.To)
+	isContractCheck := IsContract(sqldb, txData.To, )
 	if isContractCheck == true {
 		InsertTx(sqldb, txData)
 		//Runs necessary functions for tracing internal transactions through tracers.go
 		IShyftTracer.GetTracerToRun(tx.Hash())
 	} else {
 		//Inserts Tx into DB
+		SWriteInternalTxBalances(sqldb, txData.To, txData.From, txData.Amount)
 		InsertTx(sqldb, txData)
 	}
 	return nil
