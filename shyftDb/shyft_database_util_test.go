@@ -9,11 +9,10 @@ import (
 	"github.com/ShyftNetwork/go-empyrean/common"
 	"github.com/ShyftNetwork/go-empyrean/consensus/ethash"
 	"github.com/ShyftNetwork/go-empyrean/core"
-	"github.com/ShyftNetwork/go-empyrean/core/types"
 	stypes "github.com/ShyftNetwork/go-empyrean/core/sTypes"
+	"github.com/ShyftNetwork/go-empyrean/core/types"
 	"github.com/ShyftNetwork/go-empyrean/crypto"
 	"github.com/ShyftNetwork/go-empyrean/eth"
-
 )
 
 type ShyftTracer struct{}
@@ -25,7 +24,7 @@ const (
 func TestBlock(t *testing.T) {
 	//SET UP FOR TEST FUNCTIONS
 	eth.NewShyftTestLDB()
-	core.InitDBTest()
+	core.InitDB()
 	shyftTracer := new(eth.ShyftTracer)
 	core.SetIShyftTracer(shyftTracer)
 
