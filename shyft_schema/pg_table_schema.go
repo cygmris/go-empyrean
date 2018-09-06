@@ -7,7 +7,7 @@ import (
 // This Package Contains The Queries To Make Tables Required For the PG Database
 
 // TableQuery - returns sql to create db tables
-func TableQuery() string {
+func MakeTableQuery() string {
 	return fmt.Sprintf(`%s %s %s %s`, blocksTable, txsTable, accountsTable, internalTxsTable)
 }
 

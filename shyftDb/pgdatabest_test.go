@@ -29,8 +29,8 @@ func TestDbCreationExistence(t *testing.T) {
 			fmt.Println(err)
 		}
 		db.Close()
-		tableNameQuery := `SELECT tablename FROM information_schema.tables WHERE table_type='BASE TABLE' AND table_schema='public';`
-		db = core.Connect(core.ConnectionStr())
+		tableNameQuery := `select table_name from information_schema.tables where table_schema = 'public' AND table_type = 'BASE TABLE' order by table_name ASC;`
+		db = core.Connect(core.ShyftConnectStr())
 		defer db.Close()
 		if err != nil || err == sql.ErrNoRows {
 			t.Errorf("Error in Database Connection - %s", err)
@@ -42,17 +42,27 @@ func TestDbCreationExistence(t *testing.T) {
 		defer rows.Close()
 		var tablenames string
 		var table string
-		for rows.Next() {
+		notLast := rows.Next()
+		for notLast {
+			//... rows.Scan
 			err = rows.Scan(&table)
-			tablenames += table + ","
 			if err != nil {
 				panic(err)
 			}
-			fmt.Println(tablenames)
+			notLast = rows.Next()
+			if notLast {
+				tablenames += table + ", "
+			} else {
+				tablenames += table
+			}
 		}
 		err = rows.Err()
 		if err != nil {
 			panic(err)
+		}
+		want := "accounts, blocks, internaltxs, txs"
+		if tablenames != want {
+			t.Errorf("Test Failed as wanted: %s  - got: %s", want, tablenames)
 		}
 	})
 	t.Run("If the Database Doesnt Exist It Creates It", func(t *testing.T) {

@@ -44,6 +44,9 @@ func InitDB() (*sql.DB, error) {
 
 // ShyftConnectStr - Returns the Connection String With The appropriate database
 func ShyftConnectStr() string {
+	fmt.Println("DbName ", DbName())
+	fmt.Println("COnnectStr ", ConnectionStr())
+	fmt.Println("shyt connect st -> ", fmt.Sprintf("%s%s%s", ConnectionStr(), " dbname=", DbName()))
 	return fmt.Sprintf("%s%s%s", ConnectionStr(), " dbname=", DbName())
 }
 
@@ -80,8 +83,8 @@ func CreatePgDb(dbName string) {
 // CreateTables - creates the database tables for the block explorers
 func CreateTables(conn *sql.DB) {
 	// conn := Connect(ShyftConnectStr())
-	fmt.Println(shyftschema.TableQuery())
-	_, err := conn.Query(shyftschema.TableQuery())
+	fmt.Println(shyftschema.MakeTableQuery())
+	_, err := conn.Query(shyftschema.MakeTableQuery())
 	if err != nil {
 		panic(err)
 	}
@@ -130,7 +133,7 @@ func DbExists(dbname string) (bool, error) {
 	case error == sql.ErrNoRows:
 		return false, error
 		panic(error)
-	case error == nil:
+	case error != nil:
 		return false, error
 		panic(error)
 	default:
