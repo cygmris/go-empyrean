@@ -31,7 +31,7 @@ case $key in
     shift # past argument
     ;;
     --reset)
-    sh ./shyft-cli/shyftFullReset.sh
+    sh ./shyft-cli/setup.sh
     shift # past argument
     ;;
     *)    # unknown option
