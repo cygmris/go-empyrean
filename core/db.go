@@ -12,7 +12,6 @@ import (
 
 var blockExplorerDb *sql.DB
 
-// @NOTE: SHYFT - could be refactored to add a test db environment
 const (
 	defaultTestDb  = "shyftdbtest"
 	defaultDb      = "shyftdb"
@@ -27,26 +26,20 @@ func InitDB() (*sql.DB, error) {
 	// DBENV defaults to local for purposes of running the correct local
 	// database connection parameters but will use docker connection parameters if DBENV=docker
 
-	// establish a connection with admin db
-	pgDb := Connect(ConnectionStr())
 	// Check for existence of Database
 	exist, _ := DbExists(DbName())
-	pgDb.Close()
 	if !exist {
-		// create the db disc
+		// create the db
 		CreatePgDb(DbName())
 	}
-	blockExplorerDb := Connect(ShyftConnectStr())
-	// disconnect from  admin db and connect to the designated db
-	CreateTables(blockExplorerDb)
+	// connect to the designated db & create tables if necessary
+	blockExplorerDb = Connect(ShyftConnectStr())
+	blockExplorerDb.Query(shyftschema.MakeTableQuery())
 	return blockExplorerDb, nil
 }
 
 // ShyftConnectStr - Returns the Connection String With The appropriate database
 func ShyftConnectStr() string {
-	fmt.Println("DbName ", DbName())
-	fmt.Println("COnnectStr ", ConnectionStr())
-	fmt.Println("shyt connect st -> ", fmt.Sprintf("%s%s%s", ConnectionStr(), " dbname=", DbName()))
 	return fmt.Sprintf("%s%s%s", ConnectionStr(), " dbname=", DbName())
 }
 
@@ -55,6 +48,10 @@ func Connect(connectURL string) *sql.DB {
 	db, err := sql.Open("postgres", connectURL)
 	if err != nil {
 		fmt.Println("ERROR OPENING DB, NOT INITIALIZING")
+		panic(err)
+	}
+	err = db.Ping()
+	if err != nil {
 		panic(err)
 	}
 	return db
@@ -74,17 +71,6 @@ func CreatePgDb(dbName string) {
 	conn := Connect(ConnectionStr())
 	sqlCmd := fmt.Sprintf(`CREATE DATABASE %s;`, dbName)
 	_, err := conn.Exec(sqlCmd)
-	if err != nil {
-		panic(err)
-	}
-	conn.Close()
-}
-
-// CreateTables - creates the database tables for the block explorers
-func CreateTables(conn *sql.DB) {
-	// conn := Connect(ShyftConnectStr())
-	fmt.Println(shyftschema.MakeTableQuery())
-	_, err := conn.Query(shyftschema.MakeTableQuery())
 	if err != nil {
 		panic(err)
 	}
@@ -125,18 +111,18 @@ func ConnectionStr() string {
 // DbExists - Checks whether the named database exists returns true or false
 func DbExists(dbname string) (bool, error) {
 	sqldb := Connect(ConnectionStr())
-	defer sqldb.Close()
 	var exists bool
 	sqlStatement := fmt.Sprintf(`select exists(SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = '%s');`, strings.ToLower(dbname))
 	error := sqldb.QueryRow(sqlStatement).Scan(&exists)
 	switch {
 	case error == sql.ErrNoRows:
+		sqldb.Close()
 		return false, error
-		panic(error)
 	case error != nil:
 		return false, error
 		panic(error)
 	default:
+		sqldb.Close()
 		return exists, error
 	}
 }
@@ -149,7 +135,9 @@ func DBConnection() (*sql.DB, error) {
 			return nil, err
 		}
 	}
-	return blockExplorerDb, nil
+	conn := blockExplorerDb
+	conn.Ping()
+	return conn, nil
 }
 
 func ClearTables() {

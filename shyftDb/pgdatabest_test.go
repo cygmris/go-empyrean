@@ -9,32 +9,24 @@ import (
 )
 
 func TestDbCreationExistence(t *testing.T) {
-
+	core.DeletePgDb(core.DbName())
+	db, err := core.InitDB()
+	if err != nil || err == sql.ErrNoRows {
+		fmt.Println(err)
+	}
 	t.Run("Creates the PG DB if it Doesnt Exist", func(t *testing.T) {
-		core.DeletePgDb(core.DbName())
-		db, err := core.InitDB()
-		if err != nil || err == sql.ErrNoRows {
-			fmt.Println(err)
-		}
-		db.Close()
 		_, err = core.DbExists(core.DbName())
 		if err != nil || err == sql.ErrNoRows {
 			t.Errorf("Error in Database Connection - DB doesn't Exist - %s", err)
 		}
-		core.DeletePgDb(core.DbName())
 	})
 	t.Run("Creates the Tables Required from the Migration Schema", func(t *testing.T) {
 		db, err := core.InitDB()
 		if err != nil || err == sql.ErrNoRows {
 			fmt.Println(err)
 		}
-		db.Close()
 		tableNameQuery := `select table_name from information_schema.tables where table_schema = 'public' AND table_type = 'BASE TABLE' order by table_name ASC;`
 		db = core.Connect(core.ShyftConnectStr())
-		defer db.Close()
-		if err != nil || err == sql.ErrNoRows {
-			t.Errorf("Error in Database Connection - %s", err)
-		}
 		rows, err := db.Query(tableNameQuery)
 		if err != nil {
 			panic(err)
@@ -68,4 +60,11 @@ func TestDbCreationExistence(t *testing.T) {
 	t.Run("If the Database Doesnt Exist It Creates It", func(t *testing.T) {
 
 	})
+	core.DeletePgDb(core.DbName())
+	db, err = core.InitDB()
+	if err != nil || err == sql.ErrNoRows {
+		fmt.Println(err)
+	}
+	db.Close()
+
 }

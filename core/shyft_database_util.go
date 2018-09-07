@@ -27,13 +27,8 @@ func SetIShyftTracer(st shyfttracerinterface.IShyftTracer) {
 
 //SWriteBlock writes to block info to sql db
 func SWriteBlock(block *types.Block, receipts []*types.Receipt) error {
-	sqldb, err := DBConnection()
-	if err != nil {
-		panic(err)
-	}
-
 	//Get miner rewards
-	rewards := swriteMinerRewards(sqldb, block)
+	rewards := swriteMinerRewards(block)
 	//Format block time to be stored
 	i, err := strconv.ParseInt(block.Time().String(), 10, 64)
 	if err != nil {
@@ -59,22 +54,21 @@ func SWriteBlock(block *types.Block, receipts []*types.Receipt) error {
 	}
 
 	//Inserts block data into DB
-	InsertBlock(sqldb, blockData)
+	InsertBlock(blockData)
 
 	if block.Transactions().Len() > 0 {
 		for _, tx := range block.Transactions() {
-			swriteTransactions(sqldb, tx, block.Header().Hash(), blockData.Number, receipts, age, blockData.GasLimit)
+			swriteTransactions(tx, block.Header().Hash(), blockData.Number, receipts, age, blockData.GasLimit)
 		}
 	}
 	return nil
 }
 
 //swriteTransactions writes to sqldb, a SHYFT postgres instance
-func swriteTransactions(sqldb *sql.DB, tx *types.Transaction, blockHash common.Hash, blockNumber string, receipts []*types.Receipt, age time.Time, gasLimit uint64) error {
+func swriteTransactions(tx *types.Transaction, blockHash common.Hash, blockNumber string, receipts []*types.Receipt, age time.Time, gasLimit uint64) error {
 	var isContract bool
 	var statusFromReciept, toAddr string
 	var contractAddressFromReciept common.Address
-
 	if tx.To() == nil {
 		for _, receipt := range receipts {
 			statusReciept := (*types.ReceiptForStorage)(receipt).Status
@@ -120,14 +114,14 @@ func swriteTransactions(sqldb *sql.DB, tx *types.Transaction, blockHash common.H
 		Status:      statusFromReciept,
 		IsContract:  isContract,
 	}
-	isContractCheck := IsContract(sqldb, txData.To)
+	isContractCheck := IsContract(txData.To)
 	if isContractCheck == true {
-		InsertTx(sqldb, txData)
+		InsertTx(txData)
 		//Runs necessary functions for tracing internal transactions through tracers.go
 		IShyftTracer.GetTracerToRun(tx.Hash())
 	} else {
 		//Inserts Tx into DB
-		InsertTx(sqldb, txData)
+		InsertTx(txData)
 	}
 	return nil
 }
@@ -139,27 +133,27 @@ func SWriteInternalTxBalances(sqldb *sql.DB, toAddr string, fromAddr string, amo
 		From:   fromAddr,
 		Amount: amount,
 	}
-	_, _, err := AccountExists(sqldb, sendAndReceiveData.To)
+	_, _, err := AccountExists(sendAndReceiveData.To)
 	value := new(big.Int)
 	value, _ = value.SetString(amount, 10)
 	switch {
 	case err == sql.ErrNoRows:
 		accountNonce := "1"
-		CreateAccount(sqldb, sendAndReceiveData.To, sendAndReceiveData.Amount, accountNonce)
-		adjustBalanceFromAddr(sqldb, sendAndReceiveData, value)
+		CreateAccount(sendAndReceiveData.To, sendAndReceiveData.Amount, accountNonce)
+		adjustBalanceFromAddr(sendAndReceiveData, value)
 	case err != nil:
 		log.Fatal(err)
 	default:
-		balanceHelper(sqldb, sendAndReceiveData, amount)
+		balanceHelper(sendAndReceiveData, amount)
 	}
 	return nil
 }
 
-func adjustBalanceFromAddr(sqldb *sql.DB, s stypes.SendAndReceive, value *big.Int) {
-	fromAddressBalance, fromAccountNonce, err := AccountExists(sqldb, s.From)
+func adjustBalanceFromAddr(s stypes.SendAndReceive, value *big.Int) {
+	fromAddressBalance, fromAccountNonce, err := AccountExists(s.From)
 	switch {
 	case err == sql.ErrNoRows:
-		CreateAccount(sqldb, s.From, "0", "1")
+		CreateAccount(s.From, "0", "1")
 		fmt.Println("New From account created")
 	}
 	if err != nil {
@@ -177,12 +171,12 @@ func adjustBalanceFromAddr(sqldb *sql.DB, s stypes.SendAndReceive, value *big.In
 	newBalanceSender.Sub(fromBalance, value)
 	newAccountNonceSender.Add(fromNonce, nonceIncrement)
 
-	UpdateAccount(sqldb, s.From, newBalanceSender.String(), newAccountNonceSender.String())
+	UpdateAccount(s.From, newBalanceSender.String(), newAccountNonceSender.String())
 }
 
-func balanceHelper(sqldb *sql.DB, s stypes.SendAndReceive, amount string) {
-	fromAddressBalance, fromAccountNonce, err := AccountExists(sqldb, s.From)
-	toAddressBalance, toAccountNonce, err := AccountExists(sqldb, s.To)
+func balanceHelper(s stypes.SendAndReceive, amount string) {
+	fromAddressBalance, fromAccountNonce, err := AccountExists(s.From)
+	toAddressBalance, toAccountNonce, err := AccountExists(s.To)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -214,15 +208,15 @@ func balanceHelper(sqldb *sql.DB, s stypes.SendAndReceive, amount string) {
 	newAccountNonceSender.Add(fromNonce, nonceIncrement)
 
 	//UPDATE ACCOUNTS BASED ON NEW BALANCES AND ACCOUNT NONCES
-	UpdateAccount(sqldb, s.To, newBalanceReceiver.String(), newAccountNonceReceiver.String())
-	UpdateAccount(sqldb, s.From, newBalanceSender.String(), newAccountNonceSender.String())
+	UpdateAccount(s.To, newBalanceReceiver.String(), newAccountNonceReceiver.String())
+	UpdateAccount(s.From, newBalanceSender.String(), newAccountNonceSender.String())
 }
 
 // @NOTE: This function is extremely complex and requires heavy testing and knowdlege of edge cases:
 // uncle blocks, account balance updates based on reorgs, diverges that get dropped.
 // Reason for this is because the accounts are not deterministic like the block and tx hashes.
 // @TODO: Calculate reorg
-func swriteMinerRewards(sqldb *sql.DB, block *types.Block) string {
+func swriteMinerRewards(block *types.Block) string {
 	minerAddr := block.Coinbase().String()
 	shyftConduitAddress := Rewards.ShyftNetworkConduitAddress.String()
 	// Calculate the total gas used in the block
@@ -252,12 +246,12 @@ func swriteMinerRewards(sqldb *sql.DB, block *types.Block) string {
 		uncleAddrs = append(uncleAddrs, uncle.Coinbase.String())
 	}
 
-	sstoreReward(sqldb, minerAddr, totalMinerReward)
-	sstoreReward(sqldb, shyftConduitAddress, Rewards.ShyftNetworkBlockReward)
+	sstoreReward(minerAddr, totalMinerReward)
+	sstoreReward(shyftConduitAddress, Rewards.ShyftNetworkBlockReward)
 	var uncRewards = new(big.Int)
 	for i := 0; i < len(uncleAddrs); i++ {
 		_ = uncleRewards[i]
-		sstoreReward(sqldb, uncleAddrs[i], uncleRewards[i])
+		sstoreReward(uncleAddrs[i], uncleRewards[i])
 	}
 
 	fullRewardValue := new(big.Int)
@@ -267,14 +261,14 @@ func swriteMinerRewards(sqldb *sql.DB, block *types.Block) string {
 	return fullRewardValue.String()
 }
 
-func sstoreReward(sqldb *sql.DB, address string, reward *big.Int) {
+func sstoreReward(address string, reward *big.Int) {
 	// Check if address exists
-	addressBalance, accountNonce, err := AccountExists(sqldb, address)
+	addressBalance, accountNonce, err := AccountExists(address)
 
 	if err == sql.ErrNoRows {
 		// Addr does not exist, thus create new entry
 		// We convert totalReward into a string and postgres converts into number
-		CreateAccount(sqldb, address, reward.String(), "1")
+		CreateAccount(address, reward.String(), "1")
 		return
 	} else if err != nil {
 		// Something went wrong panic
@@ -298,7 +292,7 @@ func sstoreReward(sqldb *sql.DB, address string, reward *big.Int) {
 		newBalance.Add(newBalance, reward)
 		newAccountNonce.Add(currentAccountNonce, nonceIncrement)
 		//Update the balance and nonce
-		UpdateAccount(sqldb, address, newBalance.String(), newAccountNonce.String())
+		UpdateAccount(address, newBalance.String(), newAccountNonce.String())
 		return
 	}
 }
@@ -308,8 +302,9 @@ func sstoreReward(sqldb *sql.DB, address string, reward *big.Int) {
 //////////////////////
 
 //CreateAccount writes new account to Postgres Db
-func CreateAccount(sqldb *sql.DB, addr string, balance string, accountNonce string) {
-	sqlStatement := `INSERT INTO accounts(addr, balance, accountNonce) VALUES(($1), ($2), ($3)) RETURNING addr`
+func CreateAccount(addr string, balance string, accountNonce string) {
+	sqldb, _ := DBConnection()
+	sqlStatement := `INSERT INTO accounts(addr, balance, accountNonce) VALUES(($1), ($2), ($3)) RETURNING addr;`
 	insertErr := sqldb.QueryRow(sqlStatement, strings.ToLower(addr), balance, accountNonce).Scan(&addr)
 	if insertErr != nil {
 		panic(insertErr)
@@ -317,9 +312,10 @@ func CreateAccount(sqldb *sql.DB, addr string, balance string, accountNonce stri
 }
 
 //AccountExists checks if account exists in Postgres Db
-func AccountExists(sqldb *sql.DB, addr string) (string, string, error) {
+func AccountExists(addr string) (string, string, error) {
+	sqldb, _ := DBConnection()
 	var addressBalance, accountNonce string
-	sqlExistsStatement := `SELECT balance, accountNonce from accounts WHERE addr = ($1)`
+	sqlExistsStatement := `SELECT balance, accountNonce from accounts WHERE addr = ($1);`
 	err := sqldb.QueryRow(sqlExistsStatement, strings.ToLower(addr)).Scan(&addressBalance, &accountNonce)
 	switch {
 	case err == sql.ErrNoRows:
@@ -332,21 +328,24 @@ func AccountExists(sqldb *sql.DB, addr string) (string, string, error) {
 }
 
 //BlockExists checks if block exists in Postgres Db
-func BlockExists(sqldb *sql.DB, hash string) error {
-	var res string
-	sqlExistsStatement := `SELECT hash from blocks WHERE hash= ($1)`
+func BlockExists(hash string) bool {
+	var res bool
+	sqlExistsStatement := `SELECT exists(select hash from blocks WHERE hash= ($1));`
+	sqldb, _ := DBConnection()
 	err := sqldb.QueryRow(sqlExistsStatement, strings.ToLower(hash)).Scan(&res)
-	switch {
-	case err == sql.ErrNoRows:
-		return err
-		panic(err)
-	default:
-		return err
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false
+		} else {
+			panic(err)
+		}
 	}
+	return res
 }
 
 //IsContract checks if toAddr is from a contract in Postgres Db
-func IsContract(sqldb *sql.DB, addr string) bool {
+func IsContract(addr string) bool {
+	sqldb, _ := DBConnection()
 	var isContract bool
 	sqlExistsStatement := `SELECT isContract from txs WHERE to_addr=($1)`
 	err := sqldb.QueryRow(sqlExistsStatement, strings.ToLower(addr)).Scan(&isContract)
@@ -358,9 +357,9 @@ func IsContract(sqldb *sql.DB, addr string) bool {
 	}
 }
 
-
 //UpdateAccount updates account in Postgres Db
-func UpdateAccount(sqldb *sql.DB, addr string, balance string, accountNonce string) {
+func UpdateAccount(addr string, balance string, accountNonce string) {
+	sqldb, _ := DBConnection()
 	updateSQLStatement := `UPDATE accounts SET balance = ($2), accountNonce = ($3) WHERE addr = ($1)`
 	_, updateErr := sqldb.Exec(updateSQLStatement, strings.ToLower(addr), balance, accountNonce)
 	if updateErr != nil {
@@ -369,7 +368,8 @@ func UpdateAccount(sqldb *sql.DB, addr string, balance string, accountNonce stri
 }
 
 //InsertBlock writes block to Postgres Db
-func InsertBlock(sqldb *sql.DB, blockData stypes.SBlock) {
+func InsertBlock(blockData stypes.SBlock) {
+	sqldb, _ := DBConnection()
 	sqlStatement := `INSERT INTO blocks(hash, coinbase, number, gasUsed, gasLimit, txCount, uncleCount, age, parentHash, uncleHash, difficulty, size, rewards, nonce) VALUES(($1), ($2), ($3), ($4), ($5), ($6), ($7), ($8), ($9), ($10), ($11), ($12),($13), ($14)) RETURNING number`
 	qerr := sqldb.QueryRow(sqlStatement, strings.ToLower(blockData.Hash), blockData.Coinbase, blockData.Number, blockData.GasUsed, blockData.GasLimit, blockData.TxCount, blockData.UncleCount, blockData.Age, blockData.ParentHash, blockData.UncleHash, blockData.Difficulty, blockData.Size, blockData.Rewards, blockData.Nonce).Scan(&blockData.Number)
 	if qerr != nil {
@@ -378,7 +378,8 @@ func InsertBlock(sqldb *sql.DB, blockData stypes.SBlock) {
 }
 
 //InsertTx writes tx to Postgres Db
-func InsertTx(sqldb *sql.DB, txData stypes.ShyftTxEntryPretty) {
+func InsertTx(txData stypes.ShyftTxEntryPretty) {
+	sqldb, _ := DBConnection()
 	var retNonce string
 	sqlStatement := `INSERT INTO txs(txhash, from_addr, to_addr, blockhash, blockNumber, amount, gasprice, gas, gasLimit, txfee, nonce, isContract, txStatus, age, data) VALUES(($1), ($2), ($3), ($4), ($5), ($6), ($7), ($8), ($9), ($10), ($11), ($12), ($13), ($14), ($15)) RETURNING nonce`
 	err := sqldb.QueryRow(sqlStatement, strings.ToLower(txData.TxHash), strings.ToLower(txData.From), strings.ToLower(txData.To), strings.ToLower(txData.BlockHash), txData.BlockNumber, txData.Amount, txData.GasPrice, txData.Gas, txData.GasLimit, txData.Cost, txData.Nonce, txData.IsContract, txData.Status, txData.Age, txData.Data).Scan(&retNonce)

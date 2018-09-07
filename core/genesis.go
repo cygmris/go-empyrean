@@ -144,9 +144,8 @@ func (e *GenesisMismatchError) Error() string {
 //WriteShyftGen writes the genesis block to Shyft db
 //@NOTE:SHYFT
 func WriteShyftGen(gen *Genesis, block *types.Block) {
-	sqldb, _ := DBConnection()
 	for k, v := range gen.Alloc {
-		_, _, err := AccountExists(sqldb, k.String())
+		_, _, err := AccountExists(k.String())
 		switch {
 		case err == sql.ErrNoRows:
 			var toAddr *common.Address
@@ -188,8 +187,8 @@ func WriteShyftGen(gen *Genesis, block *types.Block) {
 				IsContract:  false,
 			}
 			//Create account and store tx
-			CreateAccount(sqldb, k.String(), v.Balance.String(), accountNoncee)
-			InsertTx(sqldb, txData)
+			CreateAccount(k.String(), v.Balance.String(), accountNoncee)
+			InsertTx(txData)
 
 		default:
 			log.Info("Found Genesis Block")
@@ -199,7 +198,7 @@ func WriteShyftGen(gen *Genesis, block *types.Block) {
 
 //WriteShyftBlockZero writes block 0 to postgres db
 func WriteShyftBlockZero(block *types.Block, gen *Genesis) error {
-	sqldb, _ := DBConnection()
+	// sqldb, _ := DBConnection()
 
 	i, error := strconv.ParseInt(block.Time().String(), 10, 64)
 	if error != nil {
@@ -223,14 +222,9 @@ func WriteShyftBlockZero(block *types.Block, gen *Genesis) error {
 		Nonce:      block.Nonce(),
 		Rewards:    "0",
 	}
-
-	err := BlockExists(sqldb, blockData.Hash)
-	switch {
-	case err == sql.ErrNoRows:
-		InsertBlock(sqldb, blockData)
-	case err != nil:
-		panic(err)
-	default:
+	exist := BlockExists(blockData.Hash)
+	if !exist {
+		InsertBlock(blockData)
 		log.Info("Block zero written to DB")
 	}
 	return nil
@@ -264,17 +258,13 @@ func SetupGenesisBlock(db ethdb.Database, genesis *Genesis) (*params.ChainConfig
 		}
 		block, err := genesis.Commit(db)
 		//@NOTE:SHYFT SWITCH CASE ENSURES SHYFT GENESIS FUNCTIONS ARE ONLY CALLED ONCE
-		sqldb, _ := DBConnection()
-		serror := BlockExists(sqldb, block.Hash().String())
-		switch {
-		case serror == sql.ErrNoRows:
+		// sqldb, _ := DBConnection()
+		exist := BlockExists(block.Hash().String())
+		if !exist {
 			//@NOTE:SHYFT WRITE TO BLOCK ZERO DB
 			WriteShyftBlockZero(block, genesis)
 			//@NOTE:SHYFT WRITE TO DB
 			WriteShyftGen(genesis, block)
-		case serror != nil:
-			panic(serror)
-		default:
 			log.Info("Genesis Block Written")
 		}
 		return genesis.Config, block.Hash(), err
